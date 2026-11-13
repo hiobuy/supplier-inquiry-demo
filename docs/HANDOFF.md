@@ -29,7 +29,7 @@ refresh, displayed the automatic translated support reply, closed the conversati
 No real supplier was contacted; all QA content identifies
 itself as an internal Inquiry Demo test.
 
-Live Demo code version: 8a581f89-9d10-4890-bdbf-caf54a49ec49 (UI refresh, 2026-11-13).
+Live Demo code version: bc71a993-74cc-4982-9f2c-8f2c4f86c087 (header repository link, 2026-11-13).
 The earlier full integration acceptance used version 1cc7a8f2-f41d-44e8-9b1f-bacc166e50f5.
 The backend prevents delayed status events from reopening a closed conversation;
 a signed out-of-order event regression passed.
@@ -43,6 +43,8 @@ secrets in the public snapshot; four Gitleaks findings are reviewed synthetic te
 
 ## UI refresh (2026-11-13)
 
+- Added a compact GitHub source link in the page header, opening the public repository in a new tab.
+  The production link and 320px mobile layout were verified; all 43 existing fixture tests passed.
 - Refined the product gallery, typography, inquiry action and floating chat launcher.
 - Mobile chat has a single-row header and full-screen layout with visual viewport/safe-area handling.
   The duplicate product header and external product links inside chat were removed; the product page

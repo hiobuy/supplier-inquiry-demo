@@ -85,9 +85,20 @@ a:focus-visible,
   font-weight: 450;
   letter-spacing: 0;
 }
-.header-note {
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  color: #505b6c;
   font-size: 12px;
-  color: #7a818d;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.github-link:hover {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .page {
   max-width: 1176px;
@@ -849,9 +860,6 @@ a:focus-visible,
   background: #f3f5f8;
 }
 @media (max-width: 900px) and (min-width: 721px) {
-  .header-note {
-    display: none;
-  }
   .details h1 {
     font-size: 25px;
   }
@@ -861,16 +869,14 @@ a:focus-visible,
 }
 @media (max-width: 720px) {
   .topbar-inner {
-    padding: 20px;
+    padding: 14px 20px;
+    gap: 12px;
   }
   .brand {
     font-size: 23px;
   }
   .brand-divider {
     margin: 0 13px;
-  }
-  .header-note {
-    display: none;
   }
   .page {
     padding: 23px 20px 95px;
