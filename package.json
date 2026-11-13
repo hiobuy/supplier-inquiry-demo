@@ -1,0 +1,24 @@
+{
+  "name": "inquiry-demo-hiobuy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source fixed-product supplier inquiry demo using HIOBuy Gateway",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:worker": "vitest run --config vitest.config.mjs",
+    "dev:worker": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --config wrangler.production.jsonc"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.8.1",
+    "vitest": "5.1.0",
+    "wrangler": "4.92.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>HIOBuy · Inquiry Demo</title>
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">HIO<span>Buy</span> <small>Inquiry Demo</small></div>
+    </header>
+    <main class="page">
+      <section class="product" aria-busy="true" id="product">
+        <div class="gallery">
+          <div class="photo-wrap">
+            <img id="photo" class="photo" alt="Product" hidden /><span
+              id="photo-placeholder"
+              class="muted"
+              >Loading product…</span
+            >
+          </div>
+          <div
+            id="thumbnails"
+            class="thumbnails"
+            aria-label="Product photos"
+          ></div>
+        </div>
+        <div class="details">
+          <p class="eyebrow">PRODUCT DETAILS</p>
+          <h1 id="title">Loading product…</h1>
+          <p class="price" id="price" hidden></p>
+          <p class="muted" id="seller" hidden></p>
+          <a
+            id="product-link"
+            class="product-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+            >View original product ↗</a
+          >
+          <div>
+            <button class="primary contact" id="contact" disabled>
+              Contact Supplier <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <p class="hint">
+            Ask about this product. Our support team will contact the supplier
+            for you.
+          </p>
+          <div id="page-error" class="error" role="alert" hidden></div>
+          <button id="retry-page" class="text-button" hidden>Try again</button>
+        </div>
+      </section>
+    </main>
+    <section class="chat" id="chat" aria-label="Supplier inquiry" hidden>
+      <div class="chat-head">
+        <div>
+          <strong>Supplier Inquiry</strong
+          ><small id="chat-status" aria-live="polite">Human support</small>
+        </div>
+        <div class="head-actions">
+          <button id="close-conv" class="text-button" hidden>End chat</button
+          ><button
+            id="hide-chat"
+            class="icon-button"
+            aria-label="Minimize chat"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      <a
+        id="chat-product"
+        class="chat-product"
+        target="_blank"
+        rel="noopener noreferrer"
+        ><img id="chat-photo" alt="" hidden /><strong id="chat-title"></strong
+        ><span aria-hidden="true">↗</span></a
+      >
+      <div id="chat-error" class="error chat-error" role="alert" hidden></div>
+      <button id="retry-chat" class="text-button retry-chat" hidden>
+        Try again
+      </button>
+      <div
+        id="messages"
+        class="messages"
+        role="log"
+        aria-label="Conversation messages"
+        aria-live="polite"
+      >
+        <button id="load-older" class="older" hidden>Earlier messages</button>
+        <ol id="message-list" class="message-list"></ol>
+        <p id="chat-empty" class="empty">Connecting to support…</p>
+      </div>
+      <div id="closed-panel" class="closed-panel" hidden>
+        <div id="rating-panel"></div>
+        <button id="new-generation" class="text-button">
+          Start a new inquiry
+        </button>
+      </div>
+      <form id="composer" class="composer" autocomplete="off">
+        <ul id="draft-files" class="draft-files"></ul>
+        <div class="compose-row">
+          <input
+            id="file-input"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,video/mp4"
+            multiple
+            hidden
+          /><button
+            id="attach"
+            type="button"
+            class="attach"
+            aria-label="Attach image or video"
+            title="Attach image or MP4 video"
+          >
+            ＋</button
+          ><textarea
+            id="composer-text"
+            rows="1"
+            maxlength="10000"
+            aria-label="Message"
+            placeholder="Type your question…"
+            disabled
+          ></textarea
+          ><button id="send" type="submit" class="primary" disabled>
+            Send
+          </button>
+        </div>
+        <p id="send-status" class="send-status" aria-live="polite"></p>
+      </form>
+    </section>
+  </body>
+</html>

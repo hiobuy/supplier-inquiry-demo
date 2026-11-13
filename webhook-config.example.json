@@ -1,0 +1,7 @@
+{
+  "apps": {
+    "your_hiobuy_app_id": {
+      "signingSecret": "REPLACE WITH THE HIOBUY ADMIN-PROVISIONED SECRET (32+ printable chars, no spaces)"
+    }
+  }
+}

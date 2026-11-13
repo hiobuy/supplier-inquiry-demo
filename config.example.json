@@ -1,0 +1,6 @@
+{
+  "gatewayOrigin": "https://api.hiobuy.com",
+  "dataDir": ".local/state",
+  "port": 18800,
+  "webhookConfigFile": null
+}

@@ -1,0 +1,16 @@
+.local/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+node_modules/
+dist/
+.DS_Store
+coverage/
+
+.wrangler/
+artifacts/
+*.log
+*.sqlite
+*.sqlite-*

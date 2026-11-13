@@ -1,0 +1,5 @@
+# Private server-only defaults. Copy to .dev.vars, fill the Key, chmod 600 .dev.vars.
+HIOBUY_API_KEY=
+HIOBUY_CHANNEL=1688
+HIOBUY_PRODUCT_ID=673124809943
+HIOBUY_PRODUCT_LANGUAGE=en
