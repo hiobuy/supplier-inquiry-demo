@@ -15,7 +15,7 @@ Updated 2026-11-13. This is the recovery entry point; inspect Git status and thi
 
 ## Verification
 
-32 Node contract/security tests and 8 Worker runtime/SQL tests passed. These use fixtures.
+35 Node contract/security/client tests and 8 Worker runtime/SQL tests passed. These use fixtures.
 A clean npm ci plus both suites also passed without local credentials.
 Real production product loading, App identity, conversation creation, customer send, staff claim,
 automatic translated reply, signed HIOBuy Webhook reception and post-deployment refresh recovery passed.
@@ -29,8 +29,10 @@ refresh, displayed the automatic translated support reply, closed the conversati
 No real supplier was contacted; all QA content identifies
 itself as an internal Inquiry Demo test.
 
-Live Demo code version: 1cc7a8f2-f41d-44e8-9b1f-bacc166e50f5. The release also prevents delayed status
-events from reopening a closed conversation; a signed out-of-order event regression passed.
+Live Demo code version: 8a581f89-9d10-4890-bdbf-caf54a49ec49 (UI refresh, 2026-11-13).
+The earlier full integration acceptance used version 1cc7a8f2-f41d-44e8-9b1f-bacc166e50f5.
+The backend prevents delayed status events from reopening a closed conversation;
+a signed out-of-order event regression passed.
 HIOBuy integration fixes are released and pushed on its main branch. Its 132 bindings and Portal
 AI/product flags are unchanged. No new migration or capability grant was required.
 
@@ -38,6 +40,25 @@ Public repository: https://github.com/hiobuy/supplier-inquiry-demo, main. It sta
 snapshot; earlier internal development history is retained on the local codex/inquiry-demo branch.
 Private state and operational records remain ignored. The release credential-byte scan found no real
 secrets in the public snapshot; four Gitleaks findings are reviewed synthetic test literals.
+
+## UI refresh (2026-11-13)
+
+- Refined the product gallery, typography, inquiry action and floating chat launcher.
+- Mobile chat has a single-row header and full-screen layout with visual viewport/safe-area handling.
+  The duplicate product header and external product links inside chat were removed; the product page
+  retains its original-listing link. End chat sits below the composer.
+- Added draft-only suggested questions, expanding input, unread counts and a jump-to-new-messages
+  control. Existing inquiry, attachment policy, Webhook/API synchronization, closure and rating
+  contracts are unchanged. Mobile Enter inserts a newline; the send button submits.
+- Added a two-note reply chime and a mute toggle. Audio starts after a visitor interaction, subject
+  to browser audio policy. History loading, older-page loading and duplicate reconciliation stay silent.
+- All 35 Node and 8 Worker fixture tests passed, including three notification regressions.
+  Isolated browser QA covered 320px/390px layouts, failed send/retry without duplicates, a signed
+  fixture reply, unread recovery, history refresh, closure, rating and a new inquiry.
+- Production smoke checks verified health 200, all three deployed asset hashes, real product loading,
+  existing conversation history, the compact mobile header and the sound toggle. No new production
+  message, closure or rating was submitted for this UI release. No backend, secret, namespace or
+  migration changes were made.
 
 ## Recovery rules
 

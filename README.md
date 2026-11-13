@@ -61,6 +61,10 @@ The Demo neither configures nor authenticates directly with HIOAsk. Every conver
 - Original customer text and replies, stable retry IDs, conversation history and refresh recovery.
 - Signed Webhook verification, durable event deduplication, and message API fallback.
 - End chat and optional one-time 1–5-star rating.
+- Responsive product gallery and chat, a compact full-screen mobile conversation, draft-only question
+  suggestions, and unread reply indicators. Product links stay on the product page, outside the chat.
+- A quiet reply chime with a mute toggle. Browser audio requires an initial visitor interaction;
+  restored history, older pages and repeated Webhook/API deliveries do not play a notification.
 - Same-origin CSRF protection, secure production cookies, App/visitor isolation, escaped rendering,
   allowlisted product URLs/images, request limits and bounded bodies.
 - The live release is **text only**. Image/video upload UI and endpoints are disabled in production

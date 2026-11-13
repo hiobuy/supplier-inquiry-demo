@@ -2,84 +2,243 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#fafaf9" />
+    <meta
+      name="description"
+      content="Explore a product and ask our support team to check the details with its supplier. A live HIOBuy inquiry demo."
+    />
     <title>HIOBuy · Inquiry Demo</title>
     <link rel="stylesheet" href="/app.css" />
     <script src="/app.js" defer></script>
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">HIO<span>Buy</span> <small>Inquiry Demo</small></div>
+    <header class="topbar" id="site-header">
+      <div class="topbar-inner">
+        <div class="brand">
+          HIO<span>Buy</span
+          ><span class="brand-divider" aria-hidden="true"></span
+          ><small>Inquiry demo</small>
+        </div>
+        <span class="header-note">A little clarity before you buy.</span>
+      </div>
     </header>
-    <main class="page">
-      <section class="product" aria-busy="true" id="product">
+    <main class="page" id="page-content">
+      <p class="breadcrumb">
+        <span>Explore</span><span aria-hidden="true">/</span>Supplier inquiry
+      </p>
+      <section
+        class="product"
+        aria-busy="true"
+        aria-labelledby="title"
+        id="product"
+      >
         <div class="gallery">
           <div class="photo-wrap">
-            <img id="photo" class="photo" alt="Product" hidden /><span
-              id="photo-placeholder"
-              class="muted"
-              >Loading product…</span
-            >
+            <img id="photo" class="photo" alt="Product" hidden />
+            <div id="photo-placeholder" class="photo-placeholder" role="status">
+              <span class="loading-mark" aria-hidden="true"></span
+              ><span id="photo-placeholder-text">Loading product…</span>
+            </div>
+            <span
+              id="photo-count"
+              class="photo-count"
+              aria-live="polite"
+              hidden
+            ></span>
           </div>
           <div
             id="thumbnails"
             class="thumbnails"
+            role="group"
             aria-label="Product photos"
           ></div>
+          <p class="gallery-note">Product photos from the original listing</p>
         </div>
         <div class="details">
-          <p class="eyebrow">PRODUCT DETAILS</p>
+          <div class="product-labels">
+            <span class="eyebrow">PRODUCT DETAILS</span
+            ><span id="channel" class="channel" hidden></span>
+          </div>
           <h1 id="title">Loading product…</h1>
           <p class="price" id="price" hidden></p>
-          <p class="muted" id="seller" hidden></p>
+          <div id="seller-row" class="seller-row" hidden>
+            <svg
+              viewBox="0 0 24 24"
+              class="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <path
+                d="m3 10 2-6h14l2 6M4 10v10h16V10M3 10c0 3 4 3 4 0 0 3 5 3 5 0 0 3 5 3 5 0 0 3 4 3 4 0M9 20v-6h6v6"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span id="seller"></span>
+          </div>
           <a
             id="product-link"
             class="product-link"
             target="_blank"
             rel="noopener noreferrer"
             hidden
-            >View original product ↗</a
+            >View original product <span aria-hidden="true">↗</span></a
           >
-          <div>
-            <button class="primary contact" id="contact" disabled>
-              Contact Supplier <span aria-hidden="true">↗</span>
+          <div class="inquiry-intro">
+            <h2>Good questions. Better decisions.</h2>
+            <p>
+              Ask about the details, availability, or customization. Our support
+              team will check with the supplier for you.
+            </p>
+            <button
+              class="primary contact"
+              id="contact"
+              aria-controls="chat"
+              aria-expanded="false"
+              disabled
+            >
+              <svg
+                viewBox="0 0 24 24"
+                class="icon"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20 11.5a8 8 0 0 1-8 8H5l-3 3V11.5a9 9 0 1 1 18 0Z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path d="M7 10h8M7 14h5" stroke-linecap="round" />
+              </svg>
+              <span>Contact Supplier</span
+              ><span class="contact-arrow" aria-hidden="true">→</span>
             </button>
+            <p class="hint">
+              A conversation about this product, with human support.
+            </p>
           </div>
-          <p class="hint">
-            Ask about this product. Our support team will contact the supplier
-            for you.
-          </p>
           <div id="page-error" class="error" role="alert" hidden></div>
           <button id="retry-page" class="text-button" hidden>Try again</button>
         </div>
       </section>
+      <footer class="page-footer">
+        <span>A live inquiry demo by <strong>HIOBuy</strong></span
+        ><span>Product details · Real conversations</span>
+      </footer>
     </main>
-    <section class="chat" id="chat" aria-label="Supplier inquiry" hidden>
+    <button
+      id="chat-launcher"
+      class="chat-launcher"
+      aria-label="Open supplier inquiry"
+      aria-controls="chat"
+      aria-expanded="false"
+      hidden
+    >
+      <svg
+        viewBox="0 0 24 24"
+        class="icon"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        aria-hidden="true"
+      >
+        <path
+          d="M20 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 1 1 18 0Z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path d="M7 10h8M7 14h5" stroke-linecap="round" />
+      </svg>
+      <span id="launcher-label">Ask a question</span
+      ><span id="unread-count" class="unread-count" hidden></span>
+    </button>
+    <section
+      class="chat"
+      id="chat"
+      role="dialog"
+      aria-labelledby="chat-heading"
+      hidden
+    >
       <div class="chat-head">
-        <div>
-          <strong>Supplier Inquiry</strong
+        <div class="support-avatar" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            class="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M4 13v-1a8 8 0 0 1 16 0v1M4 12H3v6h4v-6H4Zm16 0h1v6h-4v-6h3ZM20 18c0 3-3 3-6 3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+        <div class="support-heading">
+          <strong id="chat-heading">Supplier support</strong
           ><small id="chat-status" aria-live="polite">Human support</small>
         </div>
         <div class="head-actions">
-          <button id="close-conv" class="text-button" hidden>End chat</button
-          ><button
+          <button
+            id="reply-sound"
+            class="icon-button sound-toggle"
+            aria-label="Mute reply sound"
+            aria-pressed="true"
+            title="Reply sound on"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <path d="M10 5 5 9H2v6h3l5 4V5Z" stroke-linejoin="round" />
+              <path
+                class="sound-waves"
+                d="M14 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"
+                stroke-linecap="round"
+              />
+              <path
+                class="sound-off"
+                d="m15 9 6 6m0-6-6 6"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <button
             id="hide-chat"
             class="icon-button"
             aria-label="Minimize chat"
+            title="Minimize chat"
           >
-            ×
+            <svg
+              viewBox="0 0 24 24"
+              class="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
         </div>
       </div>
-      <a
-        id="chat-product"
-        class="chat-product"
-        target="_blank"
-        rel="noopener noreferrer"
-        ><img id="chat-photo" alt="" hidden /><strong id="chat-title"></strong
-        ><span aria-hidden="true">↗</span></a
-      >
       <div id="chat-error" class="error chat-error" role="alert" hidden></div>
       <button id="retry-chat" class="text-button retry-chat" hidden>
         Try again
@@ -90,15 +249,61 @@
         role="log"
         aria-label="Conversation messages"
         aria-live="polite"
+        aria-relevant="additions text"
+        tabindex="0"
       >
-        <button id="load-older" class="older" hidden>Earlier messages</button>
+        <button id="load-older" class="older" hidden>Earlier messages ↑</button>
         <ol id="message-list" class="message-list"></ol>
-        <p id="chat-empty" class="empty">Connecting to support…</p>
+        <div id="chat-empty" class="empty">
+          <div class="empty-symbol" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              class="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M20 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 1 1 18 0Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M7 10h8M7 14h5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <h2 id="empty-title">Let's talk details.</h2>
+          <p id="empty-description">Connecting to support…</p>
+          <div
+            id="suggestions"
+            class="suggestions"
+            aria-label="Suggested questions"
+            hidden
+          >
+            <button type="button" data-question="Is this item available?">
+              Is this item available? <span aria-hidden="true">↗</span>
+            </button>
+            <button
+              type="button"
+              data-question="What is the minimum order quantity?"
+            >
+              What's the minimum order? <span aria-hidden="true">↗</span>
+            </button>
+            <button
+              type="button"
+              data-question="Can this product be customized?"
+            >
+              Can it be customized? <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </div>
       </div>
+      <button id="new-messages" class="new-messages" hidden>
+        New messages ↓
+      </button>
       <div id="closed-panel" class="closed-panel" hidden>
         <div id="rating-panel"></div>
         <button id="new-generation" class="text-button">
-          Start a new inquiry
+          Start a new inquiry →
         </button>
       </div>
       <form id="composer" class="composer" autocomplete="off">
@@ -110,27 +315,68 @@
             accept="image/png,image/jpeg,image/webp,video/mp4"
             multiple
             hidden
-          /><button
+          />
+          <button
             id="attach"
             type="button"
-            class="attach"
+            class="attach icon-button"
             aria-label="Attach image or video"
             title="Attach image or MP4 video"
           >
-            ＋</button
-          ><textarea
+            <svg
+              viewBox="0 0 24 24"
+              class="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <path
+                d="m8 13 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9a6 6 0 0 1 8 8l-9 9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <textarea
             id="composer-text"
             rows="1"
             maxlength="10000"
             aria-label="Message"
-            placeholder="Type your question…"
+            placeholder="Ask about this product…"
             disabled
-          ></textarea
-          ><button id="send" type="submit" class="primary" disabled>
-            Send
+          ></textarea>
+          <button
+            id="send"
+            type="submit"
+            class="primary send-button"
+            aria-label="Send message"
+            title="Send message"
+            disabled
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 19V5m-6 6 6-6 6 6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
         </div>
-        <p id="send-status" class="send-status" aria-live="polite"></p>
+        <p id="send-status" class="send-status" role="status"></p>
+        <p class="composer-note">
+          <span>Human support, through HIOBuy</span
+          ><button id="close-conv" type="button" class="text-button" hidden>
+            End chat
+          </button>
+        </p>
       </form>
     </section>
   </body>

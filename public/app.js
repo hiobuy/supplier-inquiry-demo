@@ -23,7 +23,59 @@ const state = {
   booting: null,
   connecting: false,
   mediaEnabled: true,
+  historyReady: false,
+  unread: new Set(),
+  pendingScroll: false,
+  returnFocus: null,
+  soundEnabled: true,
 };
+const mobileLayout = window.matchMedia("(max-width: 720px)");
+let replyAudio = null;
+let lastReplySound = -Infinity;
+function unlockReplySound() {
+  if (!state.soundEnabled) return;
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!replyAudio && Audio) replyAudio = new Audio();
+    if (replyAudio?.state === "suspended") replyAudio.resume().catch(() => {});
+  } catch {
+    /* Audio is optional; chat remains usable when the browser blocks it. */
+  }
+}
+function playReplySound() {
+  if (
+    !state.soundEnabled ||
+    replyAudio?.state !== "running" ||
+    performance.now() - lastReplySound < 1000
+  )
+    return;
+  try {
+    const start = replyAudio.currentTime;
+    for (const [frequency, delay] of [
+      [880, 0],
+      [1174.66, 0.12],
+    ]) {
+      const tone = replyAudio.createOscillator(),
+        gain = replyAudio.createGain();
+      tone.type = "sine";
+      tone.frequency.value = frequency;
+      gain.gain.setValueAtTime(0, start + delay);
+      gain.gain.linearRampToValueAtTime(0.045, start + delay + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + delay + 0.2);
+      tone.connect(gain);
+      gain.connect(replyAudio.destination);
+      tone.start(start + delay);
+      tone.stop(start + delay + 0.22);
+      tone.onended = () => {
+        tone.disconnect();
+        gain.disconnect();
+      };
+    }
+    lastReplySound = performance.now();
+  } catch {
+    /* A notification must never interrupt message delivery. */
+  }
+}
 function el(tag, props = {}, ...children) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
@@ -200,7 +252,8 @@ async function loadPage() {
     showError($("page-error"), e);
     $("retry-page").hidden = false;
     $("title").textContent = "Product unavailable";
-    $("photo-placeholder").textContent = "Unable to load product";
+    $("photo-placeholder-text").textContent = "Unable to load product";
+    $("photo-placeholder").querySelector(".loading-mark").hidden = true;
   } finally {
     $("product").setAttribute("aria-busy", "false");
   }
@@ -208,24 +261,25 @@ async function loadPage() {
 function renderProduct() {
   const p = state.product;
   $("title").textContent = p.title;
-  $("chat-title").textContent = p.title;
   $("price").textContent = p.price_label || "";
   $("price").hidden = !p.price_label;
   $("seller").textContent = p.seller || "";
-  $("seller").hidden = !p.seller;
+  $("seller-row").hidden = !p.seller;
+  $("channel").textContent = p.channel === "1688" ? "1688" : "Taobao";
+  $("channel").hidden = false;
   const url = safeProductUrl(p.url);
-  for (const id of ["product-link", "chat-product"]) {
-    const a = $(id);
-    if (url) a.href = url;
-    else a.removeAttribute("href");
-  }
+  if (url) $("product-link").href = url;
+  else $("product-link").removeAttribute("href");
   $("product-link").hidden = !url;
   const images = p.images.map(safeCdn).filter(Boolean);
   clear($("thumbnails"));
   function choose(src, index) {
     $("photo").src = src;
     $("photo").hidden = false;
+    $("photo").alt = `${p.title} — photo ${index + 1}`;
     $("photo-placeholder").hidden = true;
+    $("photo-count").textContent = `${index + 1} / ${images.length}`;
+    $("photo-count").hidden = false;
     [...$("thumbnails").children].forEach((b, i) => {
       b.classList.toggle("selected", i === index);
       b.setAttribute("aria-pressed", String(i === index));
@@ -246,14 +300,14 @@ function renderProduct() {
   );
   if (images.length) {
     choose(images[0], 0);
-    $("chat-photo").src = images[0];
-    $("chat-photo").hidden = false;
   } else {
-    $("photo-placeholder").textContent = "No product photo";
+    $("photo-placeholder-text").textContent = "No product photo";
+    $("photo-placeholder").querySelector(".loading-mark").hidden = true;
     $("photo-placeholder").hidden = false;
     $("photo").hidden = true;
+    $("photo-count").hidden = true;
   }
-  $("contact").textContent = "Contact Supplier ↗";
+  syncLauncher();
 }
 function inquiryReady() {
   const q = state.inquiry;
@@ -268,8 +322,78 @@ function canCompose() {
   );
 }
 function openChat() {
+  if ($("chat").hidden) state.returnFocus = document.activeElement;
   $("chat").hidden = false;
   $("contact").setAttribute("aria-expanded", "true");
+  syncChatLayout();
+  syncLauncher();
+  scrollToLatest();
+  $("hide-chat").focus({ preventScroll: true });
+}
+function hideChat() {
+  $("chat").hidden = true;
+  $("contact").setAttribute("aria-expanded", "false");
+  syncChatLayout();
+  syncLauncher();
+  const target = state.returnFocus;
+  (target?.isConnected && !target.closest("#chat")
+    ? target
+    : $("chat-launcher")
+  ).focus({ preventScroll: true });
+}
+function syncLauncher() {
+  const count = state.unread.size;
+  $("chat-launcher").hidden = !state.product || !$("chat").hidden;
+  $("chat-launcher").setAttribute("aria-expanded", String(!$("chat").hidden));
+  $("chat-launcher").setAttribute(
+    "aria-label",
+    `Open supplier inquiry${count ? `, ${count} unread messages` : ""}`,
+  );
+  $("launcher-label").textContent = state.current
+    ? "Continue conversation"
+    : "Ask a question";
+  $("unread-count").textContent = count > 99 ? "99+" : String(count);
+  $("unread-count").hidden = !count;
+}
+function syncChatLayout() {
+  const modal = mobileLayout.matches && !$("chat").hidden;
+  document.body.classList.toggle("chat-open", !$("chat").hidden);
+  $("page-content").inert = modal;
+  $("site-header").inert = modal;
+  if (modal) $("chat").setAttribute("aria-modal", "true");
+  else $("chat").removeAttribute("aria-modal");
+  const viewport = window.visualViewport;
+  if (viewport) {
+    $("chat").style.setProperty("--chat-height", `${viewport.height}px`);
+    $("chat").style.setProperty("--chat-top", `${viewport.offsetTop}px`);
+  }
+}
+function scrollToLatest() {
+  $("messages").scrollTop = $("messages").scrollHeight;
+  state.pendingScroll = false;
+  state.unread.clear();
+  $("new-messages").hidden = true;
+  syncLauncher();
+}
+function renderEmpty() {
+  const ready = canCompose();
+  $("chat-empty").hidden = state.messages.size > 0;
+  $("empty-title").textContent =
+    state.current?.status === "closed"
+      ? "Conversation ended"
+      : "Let's talk details.";
+  $("empty-description").textContent = state.connecting
+    ? "Connecting you with support…"
+    : ready
+      ? "Ask a question below. Our team will check the details with the supplier."
+      : state.current?.status === "closed"
+        ? "You can start a new inquiry whenever you're ready."
+        : "You can explore the product while chat is unavailable.";
+  $("suggestions").hidden = !ready;
+}
+function focusComposer() {
+  if (canCompose() && !$("chat").hidden)
+    $("composer-text").focus({ preventScroll: true });
 }
 function stopTimers() {
   for (const t of state.timers) clearInterval(t);
@@ -292,14 +416,13 @@ async function contactSupplier(newGeneration = false) {
   if (state.connecting) return;
   if (state.current && !newGeneration) {
     renderHeader();
-    if (canCompose()) $("composer-text").focus();
+    focusComposer();
     return;
   }
   state.connecting = true;
   renderHeader();
   showError($("chat-error"), null);
   $("retry-chat").hidden = true;
-  $("chat-empty").textContent = "Connecting to support…";
   try {
     const r = await bootstrap();
     if (!inquiryReady())
@@ -316,13 +439,11 @@ async function contactSupplier(newGeneration = false) {
     showError($("chat-error"), null);
   } catch (e) {
     showError($("chat-error"), e);
-    $("chat-empty").textContent =
-      "You can view the product while chat is unavailable.";
     $("retry-chat").hidden = false;
   } finally {
     state.connecting = false;
     renderHeader();
-    if (canCompose()) $("composer-text").focus();
+    focusComposer();
   }
 }
 async function selectConversation(conv) {
@@ -334,12 +455,18 @@ async function selectConversation(conv) {
   state.seq = 0;
   state.nextCursor = null;
   state.olderLoaded = false;
+  state.historyReady = false;
+  state.unread.clear();
+  state.pendingScroll = false;
   $("composer-text").value = draftFor(conv.id).text;
   renderHeader();
   renderMessages();
   renderDraft();
   await reconcile(true);
   await pollUpdates();
+  state.historyReady = true;
+  if (!$("chat").hidden) scrollToLatest();
+  syncLauncher();
   state.timers.push(
     setInterval(pollUpdates, 3000),
     setInterval(() => reconcile(false), 20000),
@@ -354,7 +481,7 @@ function renderHeader() {
     : closed
       ? "Conversation ended"
       : c
-        ? "Human support · Inquiry Demo"
+        ? "Human support · Product inquiry"
         : "Human support";
   $("close-conv").hidden = !c || closed;
   $("close-conv").disabled = state.connecting;
@@ -362,8 +489,13 @@ function renderHeader() {
   $("closed-panel").hidden = !closed;
   $("composer-text").disabled = !ready;
   $("attach").disabled = !ready || !state.mediaEnabled;
-  $("attach").title = state.mediaEnabled ? "Attach images or video" : "This demo currently supports text messages only";
-  $("send").disabled = !ready || (c && draftFor(c.id).sending);
+  $("attach").hidden = !state.mediaEnabled;
+  $("attach").title = state.mediaEnabled
+    ? "Attach images or video"
+    : "This demo currently supports text messages only";
+  renderEmpty();
+  if (c) renderDraft();
+  else $("send").disabled = true;
   if (closed) renderRating();
 }
 function setConversation(conv) {
@@ -372,10 +504,21 @@ function setConversation(conv) {
   state.current = conv;
   if (changed) renderHeader();
 }
-function mergeMessages(list) {
+function mergeMessages(list, { historical = false } = {}) {
   let changed = false;
+  let hasNewReply = false;
   for (const m of list || []) {
     const prev = state.messages.get(m.id);
+    if (
+      !prev &&
+      state.historyReady &&
+      !historical &&
+      m.sender_type === "staff"
+    ) {
+      hasNewReply = true;
+      state.pendingScroll = true;
+      if ($("chat").hidden) state.unread.add(m.id);
+    }
     if (
       !prev ||
       prev.seq !== m.seq ||
@@ -386,6 +529,8 @@ function mergeMessages(list) {
       changed = true;
     }
   }
+  if (hasNewReply) playReplySound();
+  syncLauncher();
   return changed;
 }
 async function reconcile(initial) {
@@ -435,7 +580,7 @@ async function loadOlder() {
     if (state.current?.id !== conv.id) return;
     state.olderLoaded = true;
     state.nextCursor = r.next_cursor;
-    mergeMessages(r.messages);
+    mergeMessages(r.messages, { historical: true });
     renderMessages(true);
   } catch (e) {
     showError($("chat-error"), e);
@@ -470,10 +615,7 @@ function renderMessages(keepScroll = false) {
     (a, b) =>
       a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
   );
-  $("chat-empty").hidden = !!msgs.length;
-  $("chat-empty").textContent = state.current
-    ? "What would you like to know about this product?"
-    : "Connecting to support…";
+  renderEmpty();
   for (const m of msgs) {
     const mine = m.sender_type === "customer",
       li = el("li", { class: `msg ${mine ? "customer" : "staff"}` });
@@ -481,16 +623,10 @@ function renderMessages(keepScroll = false) {
       el("span", { class: "who", text: mine ? "You" : "Supplier support" }),
     );
     if (m.product_card) {
-      const url = safeProductUrl(m.product_card.url);
       li.append(
         el(
-          url ? "a" : "div",
-          {
-            class: "card-link",
-            href: url || undefined,
-            target: url ? "_blank" : undefined,
-            rel: url ? "noopener noreferrer" : undefined,
-          },
+          "div",
+          { class: "card-link" },
           el("div", { class: "cs", text: "I'm looking at this product" }),
           el("div", { class: "ct", text: m.product_card.title }),
           m.product_card.price_label
@@ -509,10 +645,15 @@ function renderMessages(keepScroll = false) {
   }
   $("load-older").hidden = !state.nextCursor;
   if (keepScroll) wrap.scrollTop = wrap.scrollHeight - prevHeight;
-  else if (atBottom) wrap.scrollTop = wrap.scrollHeight;
+  else if (atBottom && !$("chat").hidden) scrollToLatest();
+  else if (state.pendingScroll && !$("chat").hidden)
+    $("new-messages").hidden = false;
 }
 function renderDraft() {
   if (!state.current) return;
+  const input = $("composer-text");
+  input.style.height = "auto";
+  input.style.height = `${Math.min(136, Math.max(40, input.scrollHeight))}px`;
   const d = draftFor(state.current.id);
   const ul = $("draft-files");
   clear(ul);
@@ -565,9 +706,12 @@ function renderDraft() {
       );
     ul.append(li);
   }
-  $("send").disabled = d.sending || !canCompose();
+  $("send").disabled =
+    d.sending ||
+    !canCompose() ||
+    (!$("composer-text").value.trim() && !d.files.length);
   const st = $("send-status");
-  st.className = `small${d.error ? " err" : ""}`;
+  st.className = `send-status${d.error ? " err" : ""}`;
   st.textContent = d.sending
     ? "Sending…"
     : d.error
@@ -599,7 +743,12 @@ function videoDuration(file) {
 }
 async function addFiles(fileList) {
   if (!state.current) return;
-  if (!state.mediaEnabled) { showError($("chat-error"), {message:"This demo currently supports text messages only."}); return; }
+  if (!state.mediaEnabled) {
+    showError($("chat-error"), {
+      message: "This demo currently supports text messages only.",
+    });
+    return;
+  }
   const convId = state.current.id;
   const d = draftFor(convId);
   for (const file of fileList) {
@@ -719,8 +868,10 @@ async function send(ev) {
     } else if (d.text === raw) d.text = "";
     d.cmid = null;
     d.sig = null;
-    if (state.current?.id === conv.id && mergeMessages([message]))
+    if (state.current?.id === conv.id && mergeMessages([message])) {
       renderMessages();
+      if (!$("chat").hidden) scrollToLatest();
+    }
   } catch (e) {
     d.error = e;
   } finally {
@@ -869,17 +1020,57 @@ async function closeConversation() {
 $("contact").addEventListener("click", () => contactSupplier());
 $("retry-chat").addEventListener("click", () => contactSupplier());
 $("retry-page").addEventListener("click", loadPage);
-$("hide-chat").addEventListener("click", () => {
-  $("chat").hidden = true;
-  $("contact").setAttribute("aria-expanded", "false");
-  $("contact").focus();
+$("chat-launcher").addEventListener("click", () => contactSupplier());
+$("reply-sound").addEventListener("click", () => {
+  state.soundEnabled = !state.soundEnabled;
+  $("reply-sound").setAttribute("aria-pressed", String(state.soundEnabled));
+  $("reply-sound").setAttribute(
+    "aria-label",
+    state.soundEnabled ? "Mute reply sound" : "Enable reply sound",
+  );
+  $("reply-sound").title = state.soundEnabled
+    ? "Reply sound on"
+    : "Reply sound off";
+  unlockReplySound();
+});
+document.addEventListener("pointerdown", unlockReplySound, { passive: true });
+document.addEventListener("keydown", unlockReplySound);
+$("hide-chat").addEventListener("click", hideChat);
+$("new-messages").addEventListener("click", scrollToLatest);
+$("messages").addEventListener(
+  "scroll",
+  () => {
+    const wrap = $("messages");
+    if (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60) {
+      state.pendingScroll = false;
+      $("new-messages").hidden = true;
+    }
+  },
+  { passive: true },
+);
+$("suggestions").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-question]");
+  if (!button || !canCompose()) return;
+  // Suggestions only fill an empty draft; the visitor decides when to send.
+  if (!$("composer-text").value.trim()) {
+    $("composer-text").value = button.dataset.question;
+    draftFor(state.current.id).text = button.dataset.question;
+    renderDraft();
+  }
+  focusComposer();
 });
 $("composer").addEventListener("submit", send);
 $("composer-text").addEventListener("input", () => {
   if (state.current) draftFor(state.current.id).text = $("composer-text").value;
+  renderDraft();
 });
 $("composer-text").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+  if (
+    e.key === "Enter" &&
+    !e.shiftKey &&
+    !e.isComposing &&
+    !mobileLayout.matches
+  ) {
     e.preventDefault();
     send(e);
   }
@@ -903,5 +1094,35 @@ $("close-conv").addEventListener("click", closeConversation);
 $("new-generation").addEventListener("click", () => contactSupplier(true));
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("chat").hidden) $("hide-chat").click();
+  if (e.key === "Tab" && mobileLayout.matches && !$("chat").hidden) {
+    const targets = [
+      ...$("chat").querySelectorAll(
+        "button:not(:disabled), a[href], textarea:not(:disabled), [tabindex='0']",
+      ),
+    ].filter((node) => node.getClientRects().length);
+    const first = targets[0],
+      last = targets[targets.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last?.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first?.focus();
+    }
+  }
 });
+mobileLayout.addEventListener("change", syncChatLayout);
+window.visualViewport?.addEventListener("resize", syncChatLayout);
+window.visualViewport?.addEventListener("scroll", syncChatLayout);
+if (window.ResizeObserver) {
+  const composerSize = new ResizeObserver(() => {
+    const panel = $("composer").hidden ? $("closed-panel") : $("composer");
+    $("chat").style.setProperty(
+      "--composer-height",
+      `${panel.getBoundingClientRect().height}px`,
+    );
+  });
+  composerSize.observe($("composer"));
+  composerSize.observe($("closed-panel"));
+}
 loadPage();
