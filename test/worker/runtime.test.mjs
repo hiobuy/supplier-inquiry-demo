@@ -1,10 +1,15 @@
 import { beforeEach,it,expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { SELF,reset,runInDurableObject } from 'cloudflare:test';
-import { DemoState } from '../../src/worker.mjs';
+import { DemoState, productionConfig } from '../../src/worker.mjs';
 import { signPayload } from '../../src/webhook.mjs';
 const ORIGIN='https://demo.example',KEY='test-key-app-a-0123456789abcdef',SECRET='test_whsec_app_a_0123456789abcdef0123';
 beforeEach(async()=>{await reset();await env.HIOBUY_GATEWAY.fetch('https://fixture.test/__fixture/reset',{method:'POST'});});
+it('pins production image-only mode without enabling videos',()=>{
+ expect(productionConfig({...env,MEDIA_ENABLED:'images'})).toMatchObject({mediaEnabled:true,videosEnabled:false});
+ expect(productionConfig({...env,MEDIA_ENABLED:'false'})).toMatchObject({mediaEnabled:false,videosEnabled:false});
+ expect(productionConfig({...env,MEDIA_ENABLED:'unexpected'})).toMatchObject({mediaEnabled:false,videosEnabled:false});
+});
 class Browser {
  cookie='';csrf='';
  async request(method,path,body,options={}){

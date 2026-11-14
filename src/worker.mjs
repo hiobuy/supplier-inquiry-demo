@@ -13,7 +13,8 @@ export function productionConfig(env) {
   if (!/^app_[A-Za-z0-9_-]{1,100}$/.test(env.HIOBUY_APP_ID || "")) throw new Error("Invalid App");
   if (typeof env.HIOBUY_API_KEY !== "string" || env.HIOBUY_API_KEY.length < 16) throw new Error("Missing credential");
   return { publicOrigin: origin.origin, gatewayOrigin: gateway.origin, expectedAppId: env.HIOBUY_APP_ID,
-    requireProductionKey: true, mediaEnabled: env.MEDIA_ENABLED === "true" };
+    requireProductionKey: true, mediaEnabled: ["true", "images"].includes(env.MEDIA_ENABLED),
+    videosEnabled: env.MEDIA_ENABLED === "true" };
 }
 function secure(response) {
   const headers = new Headers(response.headers);

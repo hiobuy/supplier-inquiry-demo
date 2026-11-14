@@ -14,6 +14,17 @@ async function withDemo(fn, opts) {
 }
 const dbBytes = (d) => readFileSync(path.join(d.dataDir, "inquiry-demo.sqlite"));
 
+test("image-only production policy exposes images and rejects video before forwarding", () => withDemo(async ({port, gateway}) => {
+  const b = new Browser(port); await b.init(); const login = await b.login(KEY_A);
+  assert.equal(login.json.media_enabled, true); assert.equal(login.json.videos_enabled, false);
+  const conv = await openInquiry(b);
+  const image = await b.call("POST", `/api/conversations/${conv.id}/attachments?upload_id=${randomUUID()}`, PNG, {"content-type":"image/png"});
+  assert.equal(image.status, 201);
+  const before = gateway.calls.length;
+  const video = await b.call("POST", `/api/conversations/${conv.id}/attachments?upload_id=${randomUUID()}`, Buffer.from("0000ftyp"), {"content-type":"video/mp4"});
+  assert.equal(video.status, 415); assert.equal(video.json.error.code, "VIDEOS_DISABLED"); assert.equal(gateway.calls.length, before);
+}, {mediaEnabled:true, videosEnabled:false}));
+
 test("Host, Origin, Sec-Fetch-Site and CSRF enforcement", () => withDemo(async ({ port }) => {
   assert.equal((await request(port, { path: "/api/session", headers: { host: "evil.com" } })).status, 421);
   assert.equal((await request(port, { path: "/", headers: { host: `localhost:${port + 1}` } })).status, 421);

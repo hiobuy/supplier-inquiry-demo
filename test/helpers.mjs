@@ -172,9 +172,11 @@ export async function startHttpGateway(g = fakeGateway()) {
  * null -> no webhook verification configured; string -> that file.
  */
 export async function startDemo({ gateway = fakeGateway(), dataDir = mkdtempSync(path.join(os.tmpdir(), "inquiry-demo-")), clock = { t: Date.UTC(2026, 10, 13, 12) },
-  demoDefaults=null, webhookConfigFile, gatewayOrigin = "http://127.0.0.1:18802", fetchImpl } = {}) {
+  demoDefaults=null, webhookConfigFile, gatewayOrigin = "http://127.0.0.1:18802", fetchImpl, mediaEnabled, videosEnabled } = {}) {
   const wf = webhookConfigFile === undefined ? writeWebhookConfig() : webhookConfigFile;
-  const config = validateConfig({ gatewayOrigin, dataDir, port: 0, webhookConfigFile: wf });
+  const config = { ...validateConfig({ gatewayOrigin, dataDir, port: 0, webhookConfigFile: wf }) };
+  if (mediaEnabled !== undefined) config.mediaEnabled = mediaEnabled;
+  if (videosEnabled !== undefined) config.videosEnabled = videosEnabled;
   const app = createDemoServer({ config, fetchImpl: fetchImpl ?? gateway.fetch, now: () => clock.t, demoDefaults });
   const port = await app.start();
   return { app, port, gateway, dataDir, clock, webhookConfigFile: wf };

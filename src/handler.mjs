@@ -394,6 +394,7 @@ export function createDemoHandler({
     return {
       csrf_token: sess.csrf,
       media_enabled: config.mediaEnabled !== false,
+      videos_enabled: config.mediaEnabled !== false && config.videosEnabled !== false,
       app: app ? { id: app.app_id, name: app.name } : null,
       key_active: !!entry,
       key_expires_at: entry ? new Date(entry.expiresAt).toISOString() : null,
@@ -796,6 +797,8 @@ export function createDemoHandler({
         "upload_id must be a UUID.",
       );
     const type = (req.headers["content-type"] ?? "").toLowerCase();
+    if (type === "video/mp4" && config.videosEnabled === false)
+      throw new HttpError(415, "VIDEOS_DISABLED", "Video uploads are unavailable; use PNG, JPEG or WebP images.");
     if (!(type in MEDIA_TYPES))
       throw new HttpError(
         415,

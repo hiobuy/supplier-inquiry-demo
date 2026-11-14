@@ -22,7 +22,7 @@
     "HIOBUY_CHANNEL": "1688",
     "HIOBUY_PRODUCT_ID": "673124809943",
     "HIOBUY_PRODUCT_LANGUAGE": "en",
-    "MEDIA_ENABLED": "false"
+    "MEDIA_ENABLED": "images"
   },
   "durable_objects": {
     "bindings": [

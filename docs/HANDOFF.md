@@ -1,3 +1,12 @@
+# Current production image-only release (2026-11-14)
+
+The owner explicitly approved deploying updates and enabling private Cloudflare R2 images
+without an antivirus service for now. MEDIA_ENABLED=images enables PNG/JPEG/WebP only; videos
+are refused in the browser and server. Keep visitor/App isolation, existing history and genuine
+recall unchanged. Codex owns this work; no paid fallback, new compute resources or Git push.
+The upstream HIOAsk raster_validation policy and client image permission must be ready before
+this Demo is enabled. Earlier media-disabled instructions below are historical for this release.
+
 # Recall trial published (2026-11-14)
 
 Owner approved publishing for use. Source8008985 is deployed as

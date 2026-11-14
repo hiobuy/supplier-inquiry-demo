@@ -23,7 +23,8 @@ const state = {
   busy: new Set(),
   booting: null,
   connecting: false,
-  mediaEnabled: true,
+  mediaEnabled: false,
+  videosEnabled: false,
   historyReady: false,
   unread: new Set(),
   pendingScroll: false,
@@ -232,6 +233,7 @@ function bootstrap() {
     state.csrf = result.session.csrf_token;
     state.inquiry = result.session.inquiry;
     state.mediaEnabled = result.session.media_enabled !== false;
+    state.videosEnabled = result.session.videos_enabled !== false;
     state.product = result.product;
     renderProduct();
     return result;
@@ -495,8 +497,10 @@ function renderHeader() {
   $("attach").disabled = !ready || !state.mediaEnabled;
   $("attach").hidden = !state.mediaEnabled;
   $("attach").title = state.mediaEnabled
-    ? "Attach images or video"
+    ? state.videosEnabled ? "Attach images or video" : "Attach images · PNG, JPG or WebP · up to 10 MiB"
     : "This demo currently supports text messages only";
+  $("attach").setAttribute("aria-label", state.videosEnabled ? "Attach image or video" : "Attach image");
+  $("file-input").accept = state.videosEnabled ? "image/png,image/jpeg,image/webp,video/mp4" : "image/png,image/jpeg,image/webp";
   renderEmpty();
   if (c) renderDraft();
   else $("send").disabled = true;
@@ -767,14 +771,14 @@ async function addFiles(fileList) {
     if (d.files.length >= 4) {
       d.error = {
         code: "TOO_MANY_ATTACHMENTS",
-        message: "At most 4 images/videos per message.",
+        message: state.videosEnabled ? "At most 4 images/videos per message." : "At most 4 images per message.",
       };
       break;
     }
-    if (!(file.type in MEDIA)) {
+    if (!(file.type in MEDIA) || (file.type === "video/mp4" && !state.videosEnabled)) {
       d.error = {
         code: "UNSUPPORTED_TYPE",
-        message: `${file.name || "File"}: use PNG, JPEG, WebP or MP4.`,
+        message: `${file.name || "File"}: use ${state.videosEnabled ? "PNG, JPEG, WebP or MP4" : "PNG, JPEG or WebP"}.`,
       };
       continue;
     }
