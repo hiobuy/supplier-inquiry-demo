@@ -1,3 +1,11 @@
+## Main publication authorized (2026-11-14)
+
+The owner requested merging all accepted HIOAsk work into main and pushing the related repositories.
+This includes the deployed Demo recall and image-only support, while preserving the existing main
+history. Only historical source-pointer notes conflict; retain the current production implementation.
+This Git task does not request deployment, migration, secret changes or new production calls.
+Earlier no-push statements below describe previous release checkpoints.
+
 ## Released: image-only R2 integration (2026-11-14)
 
 Owner-approved source935d9d6 is live at100% as b5c1b0bc-ed60-4fad-9d3a-5250d2d5d74b. Existing

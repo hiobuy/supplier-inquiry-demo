@@ -1,3 +1,11 @@
+## Main publication authorized (2026-11-14)
+
+The owner requested merging and pushing the accepted dashboard, Demo, Gateway and documentation.
+The Demo integration retains both the deployed recall/image branch and the existing main history.
+Conflicting historical preview-pointer notes are replaced by the current production source notes;
+runtime files remain identical to the verified image-only release. Re-run Node and Worker tests
+before publication. No deployment, migration, credential rotation or visitor mutation is requested.
+
 ## Released: image-only R2 integration (2026-11-14)
 
 Owner-approved source935d9d6 is live at100% as b5c1b0bc-ed60-4fad-9d3a-5250d2d5d74b. Existing
