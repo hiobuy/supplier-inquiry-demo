@@ -1,3 +1,19 @@
+# Recall trial published (2026-11-14)
+
+Owner approved publishing for use. Source8008985 is deployed as
+b9780abb-5425-479d-8f72-9c7a9e75c120,100% traffic. Existing12 binding definitions,production secrets,
+fixed App,private DO namespace,visitor history and media-disabled policy are preserved. The existing
+HIOBuy endpoint retains3 original subscriptions and adds ask.message.recalled. Only this supported
+HIOAsk App is opted in. No new resource or credential rotation.
+
+Actual production signing,immediate direct-send/native scheduling,real recall,Demo Webhook-cache
+arrival,placeholder,refresh and390px browser checks passed as part of15 integrated production checks.
+Observed publication1291ms;the QA inquiry was closed. No paid translation,supplier contact or old
+visitor mutation. Canonical JS/CSS hashes match this candidate. Private evidence remains in the
+isolated dashboard .local/releases/recall-2026-11-14/. Full release report is the dashboard's
+docs/RECALL-PRODUCTION-RELEASE-2026-11-14.md. No Git push/merge or further rollout;await user feedback.
+The earlier local-only release gate below is superseded for this completed trial.
+
 # Local recall increment (2026-11-14)
 
 The isolated `codex/message-recall` worktree now accepts ask.message.recalled and persists terminal
