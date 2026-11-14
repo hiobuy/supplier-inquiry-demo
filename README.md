@@ -1,3 +1,8 @@
+> Production now supports PNG/JPEG/WebP images (10MiB,2400px per dimension,4 per message).
+> Files use private authenticated Cloudflare R2 storage and format validation, without antivirus
+> scanning or metadata removal, per the owner-approved initial rollout. Videos remain disabled.
+> Local media support and configuration examples below may include the separate video capability.
+
 # HIOBuy Supplier Inquiry Demo
 
 A real, fixed-product page with a **Contact Supplier** button and floating support chat.
