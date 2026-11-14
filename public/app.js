@@ -13,6 +13,7 @@ const state = {
   inquiry: null,
   current: null,
   messages: new Map(),
+  viewEpoch: 0,
   seq: 0,
   nextCursor: null,
   olderLoaded: false,
@@ -451,6 +452,7 @@ async function selectConversation(conv) {
   stopTimers();
   if (state.current) draftFor(state.current.id).text = $("composer-text").value;
   state.current = conv;
+  const view = ++state.viewEpoch;
   state.messages = new Map();
   state.seq = 0;
   state.nextCursor = null;
@@ -463,7 +465,9 @@ async function selectConversation(conv) {
   renderMessages();
   renderDraft();
   await reconcile(true);
+  if (state.viewEpoch !== view) return;
   await pollUpdates();
+  if (state.viewEpoch !== view) return;
   state.historyReady = true;
   if (!$("chat").hidden) scrollToLatest();
   syncLauncher();
@@ -509,11 +513,14 @@ function mergeMessages(list, { historical = false } = {}) {
   let hasNewReply = false;
   for (const m of list || []) {
     const prev = state.messages.get(m.id);
+    if (prev?.recalled_at) continue;
+    if (m.recalled_at) state.unread.delete(m.id);
     if (
       !prev &&
       state.historyReady &&
       !historical &&
       m.sender_type === "staff"
+      && !m.recalled_at
     ) {
       hasNewReply = true;
       state.pendingScroll = true;
@@ -521,6 +528,7 @@ function mergeMessages(list, { historical = false } = {}) {
     }
     if (
       !prev ||
+      m.recalled_at !== prev.recalled_at ||
       prev.seq !== m.seq ||
       prev.arrival !== m.arrival ||
       prev.webhook_confirmed !== m.webhook_confirmed
@@ -534,58 +542,58 @@ function mergeMessages(list, { historical = false } = {}) {
   return changed;
 }
 async function reconcile(initial) {
-  const conv = state.current;
-  if (!conv || state.busy.has("sync")) return;
-  state.busy.add("sync");
+  const conv = state.current, view = state.viewEpoch, busy = `sync:${view}`;
+  if (!conv || state.busy.has(busy)) return;
+  state.busy.add(busy);
   try {
     const r = await api("GET", `/api/conversations/${conv.id}/messages`);
-    if (state.current?.id !== conv.id) return;
+    if (state.current?.id !== conv.id || state.viewEpoch !== view) return;
     if (initial || !state.olderLoaded) state.nextCursor = r.next_cursor;
     setConversation(r.conversation);
     if (mergeMessages(r.messages) || initial) renderMessages();
     showError($("chat-error"), null);
   } catch (e) {
-    if (state.current?.id === conv.id) showError($("chat-error"), e);
+    if (state.current?.id === conv.id && state.viewEpoch === view) showError($("chat-error"), e);
   } finally {
-    state.busy.delete("sync");
+    state.busy.delete(busy);
   }
 }
 async function pollUpdates() {
-  const conv = state.current;
-  if (!conv || state.busy.has("poll")) return;
-  state.busy.add("poll");
+  const conv = state.current, view = state.viewEpoch, busy = `poll:${view}`;
+  if (!conv || state.busy.has(busy)) return;
+  state.busy.add(busy);
   try {
     const r = await api(
       "GET",
       `/api/conversations/${conv.id}/updates?since=${state.seq}`,
     );
-    if (state.current?.id !== conv.id) return;
+    if (state.current?.id !== conv.id || state.viewEpoch !== view) return;
     state.seq = Math.max(state.seq, r.seq);
     setConversation(r.conversation);
     if (mergeMessages(r.messages)) renderMessages();
   } catch {
   } finally {
-    state.busy.delete("poll");
+    state.busy.delete(busy);
   }
 }
 async function loadOlder() {
   if (!state.current || !state.nextCursor) return;
   $("load-older").disabled = true;
-  const conv = state.current;
+  const conv = state.current, view = state.viewEpoch;
   try {
     const r = await api(
       "GET",
       `/api/conversations/${conv.id}/messages?cursor=${encodeURIComponent(state.nextCursor)}`,
     );
-    if (state.current?.id !== conv.id) return;
+    if (state.current?.id !== conv.id || state.viewEpoch !== view) return;
     state.olderLoaded = true;
     state.nextCursor = r.next_cursor;
     mergeMessages(r.messages, { historical: true });
     renderMessages(true);
   } catch (e) {
-    showError($("chat-error"), e);
+    if (state.viewEpoch === view) showError($("chat-error"), e);
   } finally {
-    $("load-older").disabled = false;
+    if (state.viewEpoch === view) $("load-older").disabled = false;
   }
 }
 function renderAttachment(a) {
@@ -622,7 +630,11 @@ function renderMessages(keepScroll = false) {
     li.append(
       el("span", { class: "who", text: mine ? "You" : "Supplier support" }),
     );
-    if (m.product_card) {
+    if (m.recalled_at) {
+      li.classList.add("recalled");
+      li.append(el("div", { class: "bubble", text: "This message was recalled." }));
+    }
+    if (!m.recalled_at && m.product_card) {
       li.append(
         el(
           "div",
@@ -635,8 +647,8 @@ function renderMessages(keepScroll = false) {
         ),
       );
     }
-    if (m.content) li.append(el("div", { class: "bubble", text: m.content }));
-    if (m.attachments?.length)
+    if (!m.recalled_at && m.content) li.append(el("div", { class: "bubble", text: m.content }));
+    if (!m.recalled_at && m.attachments?.length)
       li.append(
         el("div", { class: "atts" }, m.attachments.map(renderAttachment)),
       );

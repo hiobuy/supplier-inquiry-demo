@@ -1018,3 +1018,10 @@ a:focus-visible,
     }
   }
 }
+
+.msg.recalled .bubble {
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed currentColor;
+  font-size: 13px;
+}

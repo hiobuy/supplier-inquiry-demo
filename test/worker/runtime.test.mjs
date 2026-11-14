@@ -82,3 +82,26 @@ it('keeps closure terminal when an older signed status event arrives later',asyn
  }
  expect((await visitor.request('GET','/api/conversations/'+conversation.id)).data.conversation.status).toBe('closed');
 });
+it('persists recall-before-creation tombstones across existing Worker SQL reconstruction',async()=>{
+ const b=new Browser();await b.bootstrap();const c=await b.contact();
+ const actor=env.DEMO_STATE.getByName('app_a');
+ const remote=await runInDurableObject(actor,instance=>instance.store.db.prepare('SELECT hioask_id FROM conversations WHERE id=?').get(c.id).hioask_id);
+ const original={id:'reply_recall_worker',conversation_id:remote,sender_type:'staff',type:'text',content:'Late original body',created_at:new Date().toISOString()};
+ const post=async(id,type,message)=>{
+  const raw=Buffer.from(JSON.stringify({id,type,app_id:'app_a',data:{conversation:{id:remote},message}}));
+  return SELF.fetch(ORIGIN+'/hooks/hiobuy',{method:'POST',headers:{'Content-Type':'application/json','HioBuy-Signature':signPayload(SECRET,Math.floor(Date.now()/1000),raw)},body:raw});
+ };
+ const recalled={...original,content:'',recalled_at:new Date().toISOString()};
+ expect((await post('evt_worker_recall','ask.message.recalled',recalled)).status).toBe(200);
+ expect((await post('evt_worker_recall','ask.message.recalled',recalled)).status).toBe(200);
+ await runInDurableObject(actor,(instance,state)=>{const replacement=new DemoState(state,env);instance.core.close();instance.core=replacement.core;instance.store=replacement.store;});
+ expect((await post('evt_worker_late_create','ask.message.created',original)).status).toBe(200);
+ await b.bootstrap();
+ const check=async()=>{
+  const updates=(await b.request('GET',`/api/conversations/${c.id}/updates?since=0`)).data;
+  const message=updates.messages.find(m=>m.id===original.id);
+  expect(message.content).toBe('');expect(message.recalled_at).toBe(recalled.recalled_at);expect(message.attachments).toEqual([]);
+ };
+ await check();
+ await b.request('GET',`/api/conversations/${c.id}/messages`);await check();
+});

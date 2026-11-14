@@ -100,6 +100,8 @@ export function sanitizeMessage(m, convId) {
   const o = obj(m);
   if (!o || typeof o.id !== "string" || !ID.test(o.id)) return null;
   if (o.sender_type !== "customer" && o.sender_type !== "staff") return null;
+  const recalled = o.recalled_at !== undefined;
+  if (recalled && (o.sender_type !== "staff" || !validRecallTime(o.recalled_at))) return null;
   const out = {
     id: o.id,
     conversation_id:
@@ -132,7 +134,20 @@ export function sanitizeMessage(m, convId) {
       price_label: plain(card.price_label, 64) || null,
     };
   }
+  if (recalled) {
+    out.recalled_at = o.recalled_at;
+    out.type = "text";
+    out.content = "";
+    out.attachments = [];
+    delete out.product_card;
+  }
   return out;
+}
+
+function validRecallTime(value) {
+  return typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
+    Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 }
 
 function conversationView(c) {
@@ -390,10 +405,11 @@ export function createDemoHandler({
     const dto = sanitizeMessage(raw, conv.id);
     if (!dto || (dto.conversation_id && dto.conversation_id !== conv.hioask_id))
       return null;
-    for (const a of dto.attachments)
-      store.addMedia(conv.id, a.id, a.content_type);
     store.upsertMessage(conv.id, dto, source);
-    return dto;
+    // Read the durable winner, since stale API/creation events cannot replace a recall.
+    const saved = JSON.parse(store.messageRows(conv.id, [dto.id])[0].dto_json);
+    for (const a of saved.attachments) store.addMedia(conv.id, a.id, a.content_type);
+    return saved;
   }
   function applyStatus(conv, remote) {
     const st = obj(remote)?.status;
@@ -1092,6 +1108,16 @@ export function createDemoHandler({
     if (!ev) throw new HttpError(400, "INVALID_EVENT", "Invalid event.");
     if (ev.appId && ev.appId !== v.appId)
       throw new HttpError(403, "APP_MISMATCH", "Event App mismatch.");
+    if (ev.type === "ask.message.recalled") {
+      const m = ev.message;
+      if (ev.appId !== v.appId || !m || typeof m.id !== "string" || !ID.test(m.id) || m.sender_type !== "staff" ||
+          !ev.conversation || typeof ev.conversation.id !== "string" || !ID.test(ev.conversation.id) ||
+          m.conversation_id !== ev.conversation.id ||
+          !validRecallTime(m.recalled_at) || m.content !== "" || m.type !== "text" ||
+          (m.attachments !== undefined && (!Array.isArray(m.attachments) || m.attachments.length > 0)) ||
+          m.product_card != null)
+        throw new HttpError(400, "INVALID_RECALL", "Invalid recall tombstone.");
+    }
     const bodyHash = sha256(raw);
     const result = store.tx(() => {
       const prior = store.getEvent(ev.eventId);
@@ -1116,7 +1142,7 @@ export function createDemoHandler({
       }
       if (ev.conversation && ev.conversation.id === conv.hioask_id)
         applyStatus(conv, ev.conversation);
-      if (ev.type === "ask.message.created" && ev.message)
+      if ((ev.type === "ask.message.created" || ev.type === "ask.message.recalled") && ev.message)
         recordMessage(conv, ev.message, "webhook");
       store.insertEvent({
         eventId: ev.eventId,

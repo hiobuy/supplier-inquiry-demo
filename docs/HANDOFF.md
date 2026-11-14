@@ -1,3 +1,14 @@
+# Local recall increment (2026-11-14)
+
+The isolated `codex/message-recall` worktree now accepts ask.message.recalled and persists terminal
+message tombstones in the existing shared SQLite cache. Browser merging and rendering preserve
+recalls across stale responses, duplicates, navigation, polling and refresh. Former attachment
+access is revoked locally. See RECALL-ACCEPTANCE.md for fixtures, browser evidence and release gate.
+
+This is local source only. The live version/history, production secrets, existing DO namespace and
+original main checkout are unchanged. Do not change the production endpoint subscription or enable
+HIOAsk recall without final owner release authorization. Older historical records follow.
+
 # Core handoff
 
 Updated 2026-11-13. This is the recovery entry point; inspect Git status and this file before continuing.

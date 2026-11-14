@@ -128,3 +128,29 @@ test("unsupported or blocked audio never prevents a reply from rendering", () =>
     assert.equal(c.tones.length, 0);
   }
 });
+
+test("recall is terminal in the browser and never adds sound or unread replies", () => {
+  const c = client(); c.run("unlockReplySound(); state.historyReady = true");
+  c.merge([reply("first",{recalled_at:"2026-11-13T12:00:00.000Z",content:""})]);
+  assert.equal(c.tones.length,0); assert.equal(c.run("state.unread.size"),0);
+  c.merge([reply("first",{seq:99,content:"late original"})]);
+  assert.equal(c.run('state.messages.get("first").content'),"");
+  c.merge([reply("normal",{content:"new reply"})]);
+  assert.equal(c.tones.length,2); assert.equal(c.run("state.unread.size"),1);
+  c.merge([reply("normal",{recalled_at:"2026-11-13T12:00:00.000Z",content:""})]);
+  assert.equal(c.run("state.unread.size"),0); assert.equal(c.tones.length,2);
+  c.merge([reply("normal",{seq:100,content:"stale response"})]);
+  assert.equal(c.run('state.messages.get("normal").content'),"");
+});
+
+ test("responses from a prior visit cannot resurrect messages after A to B to A navigation", async () => {
+  for (const method of ["reconcile(false)","pollUpdates()"]){
+    const c=client();
+    c.run('state.current={id:"a"}; state.viewEpoch=1; let release; api=()=>new Promise(resolve=>{release=resolve})');
+    const pending=c.run(method);
+    c.run('state.current={id:"b"}; state.viewEpoch++; state.current={id:"a"}; state.viewEpoch++; release({messages:[{id:"old",sender_type:"staff",content:"late original"}],seq:10})');
+    await pending;
+    assert.equal(c.run('state.messages.size'),0);
+    assert.equal(c.run('state.seq'),0);
+  }
+});

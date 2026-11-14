@@ -149,6 +149,13 @@ export class SqlStore {
   upsertMessage(convId, dto, source) {
     const t = this.now();
     const existing = this.db.prepare("SELECT webhook_at, api_at, dto_json FROM messages WHERE conversation_id = ? AND message_id = ?").get(convId, dto.id);
+    // A persisted recall is terminal, including after process/Worker reconstruction.
+    // Never let an immutable creation retry or an in-flight API response resurrect it.
+    if (existing && JSON.parse(existing.dto_json).recalled_at) return false;
+    if (existing && dto.recalled_at) {
+      for (const attachment of JSON.parse(existing.dto_json).attachments ?? [])
+        this.db.prepare("DELETE FROM media WHERE conversation_id=? AND attachment_id=?").run(convId, attachment.id);
+    }
     const json = JSON.stringify(dto);
     if (!existing) {
       this.db.prepare(`INSERT INTO messages (conversation_id, message_id, created_at, sender_type, dto_json, webhook_at, api_at, changed_seq)
